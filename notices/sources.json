@@ -1,0 +1,47 @@
+{
+  "@puckeditor/core": {
+    "version": "0.23.0",
+    "path": "notices/Puck-0.23.0-LICENSE.txt",
+    "url": "https://raw.githubusercontent.com/puckeditor/puck/v0.23.0/LICENSE",
+    "basis": "Exact release tag v0.23.0.",
+    "sha256": "74e836dc790cba90f8c818b0d2bdf4625910708e45419d4cf613af7df87736e9"
+  },
+  "react-remove-scroll-bar": {
+    "version": "2.3.8",
+    "path": "notices/react-remove-scroll-bar-UPSTREAM-LICENSE.txt",
+    "url": "https://raw.githubusercontent.com/theKashey/react-remove-scroll-bar/7301c160fda44cb8cf2b9fdfde61efad35736196/LICENSE",
+    "basis": "Official pinned source at 7301c160fda44cb8cf2b9fdfde61efad35736196 carries this MIT notice. That commit only adds LICENSE to v2.3.7; all 12 emitted JavaScript files reproduce the npm 2.3.8 files byte-for-byte. No claim that the 2024 npm release included a LICENSE or had a 2025 copyright line.",
+    "sha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84"
+  },
+  "readmeCover": {
+    "file": "media/demo-cover.png",
+    "sha256": "39e769d9028869668a3a6298c4ef960c992f6d8968276aacd5cf6f11e6615767",
+    "source": "Decoded frame950 from the accepted73-second Add CMS UI-animation demo,1920x1080; synthetic content, genuine editor state.",
+    "scope": "Product still from the separately produced demo; production tools are not bundled."
+  },
+  "readmeDemo": {
+    "file": "media/add-cms-demo.mp4",
+    "sha256": "decef2e093ddcd8721a1b7283685fe99bd00bf71c62955cc2f9878c63292a891",
+    "bytes": 14745294,
+    "durationSeconds": 73,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "kind": "Layered UI animation using genuine editor states and verified synthetic demo content, with synthetic login typing; not continuous recording.",
+    "soundtrack": {
+      "title": "2:23 AM",
+      "artist": "しゃろう",
+      "source": "User-provided BGM",
+      "publicRelease": "User confirmed public release within this demo film on2026-10-27. No standalone soundtrack or blanket source-code license grant."
+    },
+    "productionTools": "video-shotcraft methods and Remotion4.0.484; maintained in a separate production project, not installed with the Skill.",
+    "githubAttachment": {
+      "url": "https://github.com/user-attachments/assets/e38ffbe1-c3a9-4af2-ab3b-2fa9000a3e9d",
+      "filename": "Add-CMS-GitHub-73s.mp4",
+      "bytes": 9098443,
+      "durationSeconds": 73.045333,
+      "sha256": "2bb4a8c2fd88310c82a13a19e19f3ee922d4274cb205e5b9d9e3d1a8a40bf411",
+      "content": "Same accepted demonstration, delivery-compressed; authenticated native GitHub player metadata verified and anonymous access confirmed by the owner."
+    }
+  }
+}

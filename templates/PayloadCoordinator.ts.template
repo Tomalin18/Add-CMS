@@ -1,0 +1,65 @@
+import {createHash} from 'node:crypto';
+import {APIError,createLocalReq} from 'payload';
+import {applyBindings,type EditorManifest} from '@add-cms/core/manifest';
+import {readCanvasSession,sessionValues,type CanvasSession} from '@add-cms/core/canvas-session';
+export type PayloadCoordinatorOptions={pageCollection:string;settingsCollection:string;settingsKey:string;sharedManifest:EditorManifest;revisionFields:string[];isStaff:(user:any)=>boolean;canPublish:(user:any)=>boolean;validateRich:(value:any,inline:boolean)=>unknown;projectShared:(doc:any)=>Record<string,any>;normalizeShared?:(projected:any,source:any)=>any;createDraftRequest?:typeof createLocalReq;copy:{conflict:string;failed:string;loadFailed:string}};
+/** Source-parametrized native Payload transaction algorithm; attach to an ACL-protected fixed-page collection. */
+export function createPayloadCoordinator(options:PayloadCoordinatorOptions){
+ const validateRich=options.validateRich;
+const same=(a:any,b:any)=>JSON.stringify(a)===JSON.stringify(b);
+const canonical=(value:any):any=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
+const canvasRevision=(doc:any)=>createHash('sha256').update(JSON.stringify(canonical(Object.fromEntries(options.revisionFields.filter(key=>doc[key]!==undefined).map(key=>[key,doc[key]]))))).digest('hex');
+const conflict=()=>{throw new APIError(options.copy.conflict,409);};
+async function settings(req:any,draft:boolean){const result=await req.payload.find({collection:options.settingsCollection,where:{key:{equals:options.settingsKey}},draft,depth:0,limit:1,overrideAccess:false,user:req.user,req});if(!result.docs[0])throw new APIError(options.copy.loadFailed,400);return result.docs[0];}
+async function privatePage(id:any,req:any){return req.payload.findByID({collection:options.pageCollection,id,draft:true,depth:0,overrideAccess:true,req});}
+/** The journal is private server data, not a browser claim or a duplicate shared document. */
+async function makeCanvasSession(page:any,req:any):Promise<CanvasSession>{
+ if(!options.isStaff(req.user))throw new APIError(options.copy.failed,403);
+ const doc=await settings(req,true);const values=sessionValues(options.sharedManifest,doc);const stored=await privatePage(page.id,req);const own=stored.canvasJournal?.[String(req.user.id)];const baseValues={...values};const changes:Record<string,any>={};
+ if(own)for(const [key,value] of Object.entries(own.changes||{})){
+  if(!same(values[key],value))conflict();
+  baseValues[key]=own.baseValues[key];changes[key]=value;
+ }
+ return{version:1,pageRevision:canvasRevision(stored),settingsRevision:canvasRevision(doc),values,baseValues,changes};
+}
+/** Runs in the native Payload update transaction for autosave, manual save and Publish. */
+async function coordinateCanvas({data,req,originalDoc}:any){
+ // Client cannot set/restore private ownership, including through old version restoration.
+ if(!originalDoc?.id){delete data.canvasJournal;return data;}
+ const current=await privatePage(originalDoc.id,req);data.canvasJournal=current.canvasJournal||null;
+ if(!data.canvasSession)return data;
+ if(!options.isStaff(req.user)||!req.transactionID)throw new APIError(options.copy.failed,400);
+ let session:CanvasSession;try{session=readCanvasSession(data.canvasSession,options.sharedManifest,validateRich);}catch{throw new APIError(options.copy.failed,400);}
+ if(canvasRevision(current)!==session.pageRevision)conflict();
+ const draft=await settings(req,true);if(canvasRevision(draft)!==session.settingsRevision&&(Object.keys(session.changes).length||current.canvasJournal?.[String(req.user.id)]))conflict();
+ req.context.canvasCoordinating=true;
+ let next=draft;const publishing=data._status==='published';if(publishing&&!options.canPublish(req.user))throw new APIError(options.copy.failed,403);const actor=String(req.user.id);const journal={...current.canvasJournal};
+ const previousRecord=current.canvasJournal?.[actor];const previousOwn=previousRecord?.changes||{};const draftValues=sessionValues(options.sharedManifest,draft);
+ for(const key of Object.keys(session.changes))if(!same(session.baseValues[key],Object.hasOwn(previousOwn,key)?previousRecord.baseValues[key]:draftValues[key]))conflict();
+ for(const key of Object.keys(previousOwn))if(!Object.hasOwn(session.changes,key)&&!same(session.values[key],previousRecord.baseValues[key]))throw new APIError(options.copy.failed,400);
+ const draftPatch={...session.changes,...Object.fromEntries(Object.keys(previousOwn).filter(key=>!Object.hasOwn(session.changes,key)).map(key=>[key,session.values[key]]))};
+ if(Object.keys(draftPatch).length){
+  // Validate values independently of the client-supplied change map before any writes.
+  for(const [key,value] of Object.entries(session.changes))if(!same(value,session.values[key])||same(value,session.baseValues[key]))throw new APIError(options.copy.failed,400);
+  const contactValues=(source:any,values:Record<string,any>)=>{const projected=applyBindings(options.projectShared(source),options.sharedManifest,values);return sessionValues(options.sharedManifest,options.normalizeShared?options.normalizeShared(projected,source):projected);};
+  const wanted=contactValues(draft,{...draftValues,...draftPatch});
+  if(publishing){
+   const published=await settings(req,false);const released=contactValues(published,{...sessionValues(options.sharedManifest,published),...session.changes});
+   const remaining=Object.keys(wanted).some(key=>!same(wanted[key],released[key]));
+   await req.payload.update({collection:options.settingsCollection,id:draft.id,data:{...applyBindings(options.projectShared(published),options.sharedManifest,released),formattingInput:true,_status:'published'},depth:0,overrideAccess:false,user:req.user,req});
+   if(remaining){
+    const draftReq=await (options.createDraftRequest||createLocalReq)({user:req.user,req:{headers:req.headers,query:{...req.query,draft:'true'},transactionID:req.transactionID,context:req.context}},req.payload);
+    next=await req.payload.update({collection:options.settingsCollection,id:draft.id,data:{...applyBindings(options.projectShared(draft),options.sharedManifest,wanted),formattingInput:true,_status:'draft'},draft:true,autosave:false,depth:0,overrideAccess:false,user:req.user,req:draftReq});
+   }else next=await settings(req,true);
+  }else if(!same(wanted,draftValues))next=await req.payload.update({collection:options.settingsCollection,id:draft.id,data:{...applyBindings(options.projectShared(draft),options.sharedManifest,wanted),formattingInput:true,_status:'draft'},draft:true,autosave:false,depth:0,overrideAccess:false,user:req.user,req});
+ }
+ if(publishing||!Object.keys(session.changes).length)delete journal[actor];else journal[actor]={baseValues:Object.fromEntries(Object.keys(session.changes).map(key=>[key,session.baseValues[key]])),changes:session.changes};
+ if(Object.keys(journal).length>64)throw new APIError(options.copy.failed,400);
+ data.canvasJournal=Object.keys(journal).length?journal:null;
+ req.context.canvasReply={...session,requestValues:session.values,settingsRevision:canvasRevision(next),values:sessionValues(options.sharedManifest,next),...(publishing?{baseValues:sessionValues(options.sharedManifest,next),changes:{}}:{})};
+ delete data.canvasSession;return data;
+}
+function canvasReply({doc,req}:any){if(req.context.canvasReply&&options.isStaff(req.user))doc.canvasSession=JSON.stringify({...req.context.canvasReply,pageRevision:canvasRevision(doc)});return doc;}
+
+return {makeCanvasSession,coordinateCanvas,canvasReply,canvasRevision};
+}

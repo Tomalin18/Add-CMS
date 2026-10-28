@@ -1,0 +1,15 @@
+node_modules/
+.fixture-build/
+dist/
+artifacts/
+.env*
+!.env.example
+.private/
+uploads/
+*.sqlite*
+*.db
+*.pem
+*.key
+*.tsbuildinfo
+.DS_Store
+._*

@@ -1,0 +1,27 @@
+'use client';
+import React,{useEffect,useRef,useState} from 'react';
+import {flushSync} from 'react-dom';
+import {registerCanvasFlush,CanvasFlushError} from './canvas-flush';
+import {useForm,useFormFields,useDocumentInfo,useFormInitializing} from '@payloadcms/ui';
+import {useCanvasFormBoundary} from './PayloadCanvasForm';
+import {acceptsBridgeMessage,formFieldPatch} from '@add-cms/core/form-bridge';
+import {bindingDocument} from '@add-cms/core/manifest';
+import type {EditorManifest} from '@add-cms/core/manifest';
+/** The site wrapper supplies its manifest and existing authenticated frame route. No independent autosave writer. */
+export function createPayloadCanvasField(options:{manifest:EditorManifest;framePath:string;validate:(value:any,inline:boolean)=>unknown;title:string;invalidMessage:string}){
+ // Invoke in a client wrapper with locally imported validator; never pass functions from RSC props.
+ return function PayloadCanvasField({readOnly=false}:{readOnly?:boolean}={}){const {manifest,framePath,validate,title,invalidMessage}=options;
+ const boundary=useCanvasFormBoundary(),initializing=useFormInitializing(),{setUploadStatus}=useDocumentInfo();
+ const pending=useRef<{id:string;resolve:(release:()=>void)=>void;reject:(error:Error)=>void;timer:ReturnType<typeof setTimeout>}|null>(null);
+ const frame=useRef<HTMLIFrameElement>(null),{dispatchFields,getFields,setModified,formRef:useFormRef}=useForm();const [channel,setChannel]=useState(''),[ready,setReady]=useState(false),[error,setError]=useState('');
+ const values=useFormFields(([fields])=>manifest.fields.every(field=>Object.hasOwn(fields,field.path))?JSON.stringify(Object.fromEntries(manifest.fields.map(field=>[field.id,bindingDocument(field,fields[field.path]?.value)]))):null);
+ useEffect(()=>{setChannel(crypto.randomUUID());setReady(false);},[manifest.key]);
+ useEffect(()=>{if(!channel||initializing||readOnly)return;const receive=(event:MessageEvent)=>{if(!acceptsBridgeMessage(event,window.location.origin,frame.current?.contentWindow,channel))return;if(event.data.type==='cms:flushed'||event.data.type==='cms:flush-error'){const value=pending.current;if(value&&value.id===event.data.requestId){clearTimeout(value.timer);pending.current=null;if(event.data.type==='cms:flushed')value.resolve(()=>frame.current?.contentWindow?.postMessage({type:'cms:flush-release',channel,requestId:value.id},window.location.origin));else value.reject(new CanvasFlushError(event.data.code));}return;}if(event.data.type==='cms:upload-state'){if(typeof event.data.uploading==='boolean')setUploadStatus?.(event.data.uploading?'uploading':'idle');return;}if(event.data.type==='cms:ready'){setReady(true);return;}if(event.data.type!=='cms:fields')return;try{flushSync(()=>{dispatchFields({type:'UPDATE_MANY',formState:formFieldPatch(manifest,event.data.values,getFields(),validate)});setModified(true);});setError('');}catch{const value=pending.current;if(value){clearTimeout(value.timer);pending.current=null;frame.current?.contentWindow?.postMessage({type:'cms:flush-release',channel,requestId:value.id},window.location.origin);value.reject(new CanvasFlushError('invalid_fields'));}setError(invalidMessage);}};window.addEventListener('message',receive);return()=>window.removeEventListener('message',receive);},[channel,initializing,readOnly,manifest,dispatchFields,getFields,setModified,validate,invalidMessage,setUploadStatus]);
+ useEffect(()=>{if(ready&&values)frame.current?.contentWindow?.postMessage({type:'cms:form',channel,manifest,values:JSON.parse(values)},window.location.origin);},[ready,values,channel]);
+ useEffect(()=>{const form=useFormRef.current;if(!ready||!form||readOnly||initializing)return;return registerCanvasFlush(form,()=>new Promise((resolve,reject)=>{if(error||pending.current){reject(new CanvasFlushError('not_ready'));return;}const id=crypto.randomUUID(),timer=setTimeout(()=>{if(pending.current?.id!==id)return;pending.current=null;frame.current?.contentWindow?.postMessage({type:'cms:flush-release',channel,requestId:id},window.location.origin);reject(new CanvasFlushError('sync_timeout'));},15000);pending.current={id,resolve,reject,timer};frame.current?.contentWindow?.postMessage({type:'cms:flush-request',channel,requestId:id},window.location.origin);}));},[ready,channel,error,readOnly,initializing]);
+ useEffect(()=>()=>{const value=pending.current;if(value){clearTimeout(value.timer);value.reject(new CanvasFlushError('closed'));pending.current=null;}setUploadStatus?.('idle');},[channel,setUploadStatus]);
+ if(!boundary)return <p role="alert">{invalidMessage}</p>;
+ return !initializing&&!readOnly&&channel&&values?<>{error&&<p role="alert">{error}</p>}<iframe ref={frame} title={title} src={framePath+'?bridge='+channel}/></>:null;
+}
+
+}

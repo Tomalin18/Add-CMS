@@ -1,0 +1,30 @@
+.retrofit-mapped-image>.retrofit-image-target{display:block;position:relative;box-sizing:border-box;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;text-align:inherit;cursor:pointer;appearance:none;font:inherit}
+.retrofit-image-target:focus-visible{outline:2px solid var(--retrofit-ui-focus, #1a5c96);outline-offset:-2px}
+.retrofit-target-menu{z-index:12000;min-width:160px;padding:4px;background:var(--retrofit-ui-surface, #fff);color:var(--retrofit-ui-text, #242b3d);border:1px solid var(--retrofit-ui-border, #cbd2dc);border-radius:4px;box-shadow:0 4px 16px #0003;font:14px/1.5 sans-serif}
+.retrofit-target-menu [role=menuitem]{padding:7px 10px;outline:none;cursor:pointer}
+.retrofit-target-menu [data-highlighted]{background:var(--retrofit-ui-hover, #edf2f7)}
+.retrofit-target-popup{position:fixed;z-index:11500;max-width:min(380px,calc(100vw - 16px));padding:12px;background:var(--retrofit-ui-surface, #fff);color:var(--retrofit-ui-text, #242b3d);border:1px solid var(--retrofit-ui-border, #cbd2dc);border-radius:4px;box-shadow:0 4px 16px #0003;font:14px/1.5 sans-serif}
+.retrofit-target-popup input,.retrofit-target-popup textarea{box-sizing:border-box;width:100%;color:var(--retrofit-ui-text, #242b3d);background:var(--retrofit-ui-surface, #fff);border:1px solid #aab5c3;padding:6px}
+.retrofit-target-popup .retrofit-control-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.retrofit-target-popup button{color:var(--retrofit-ui-text, #242b3d);background:var(--retrofit-ui-surface, #fff);border:1px solid #aab5c3;padding:5px 9px}
+.retrofit-resource .retrofit-map-target{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;background:transparent;cursor:pointer}
+.retrofit-map-target:focus-visible{outline:2px solid var(--retrofit-ui-focus, #1a5c96);outline-offset:-2px}
+
+.retrofit-media-tools{padding:6px;max-width:min(340px,calc(100vw - 16px))}
+.retrofit-media-tools__actions{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.retrofit-media-tools__actions button{min-height:30px;font:inherit;white-space:nowrap}
+.retrofit-media-tools [data-cms-image-alt]{padding:8px 4px 4px}
+
+.retrofit-media-tools__filename{display:block;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 3px 6px;font-size:12px}
+.retrofit-plain-tools textarea{max-height:180px;min-height:72px}
+
+/* The editor tools contrast with both photographs and a white page; public render has no tool markup. */
+.retrofit-target-popup.retrofit-media-tools{border:2px solid #293957;box-shadow:0 4px 18px #15203d55;padding:8px}
+.retrofit-media-tools__actions{gap:8px}
+.retrofit-media-tools__actions button{min-height:36px;padding:6px 12px;font-weight:600;border:1px solid #293957;border-radius:4px}
+.retrofit-media-tools__actions button:first-child{background:#293957;color:var(--retrofit-ui-surface, #fff)}
+.retrofit-media-tools__actions button:hover:not(:disabled){box-shadow:inset 0 0 0 1px currentColor}
+.retrofit-media-tools__actions button:focus-visible{outline:3px solid #2a6bb1;outline-offset:3px}
+.retrofit-media-tools__actions button:disabled{opacity:.55;cursor:wait}
+
+.retrofit-destination{display:grid;gap:8px;min-width:220px;max-width:100%}.retrofit-destination [aria-haspopup=listbox]{display:flex;align-items:center;justify-content:space-between;width:100%;gap:12px}.retrofit-resource-settings [data-cms-destination]{padding-top:8px;min-width:240px}.retrofit-resource-settings:has([data-cms-destination]){flex-basis:100%}

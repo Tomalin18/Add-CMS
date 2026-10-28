@@ -1,0 +1,11 @@
+import {build} from 'esbuild';
+import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+const data=JSON.parse(readFileSync('fixture/alternate-site.json','utf8'));mkdirSync('.fixture-build',{recursive:true});
+const publicPage=renderToStaticMarkup(React.createElement('html',{lang:'ja'},React.createElement('head',null,React.createElement('meta',{charSet:'utf-8'}),React.createElement('title',null,data.manifest.label),React.createElement('link',{rel:'stylesheet',href:'/public.css'})),React.createElement('body',null,React.createElement('article',null,React.createElement('h1',null,data.manifest.label),React.createElement('p',null,data.initial.museumHours)))));
+writeFileSync('.fixture-build/public.html','<!doctype html>'+publicPage);writeFileSync('.fixture-build/public.css','body{font:18px/1.6 system-ui;margin:40px auto;max-width:720px;padding:0 20px}h1{font-size:2rem}');
+const result=await build({entryPoints:{editor:'fixture/entry.tsx'},outdir:'.fixture-build/private-assets',bundle:true,platform:'browser',format:'esm',jsx:'automatic',target:'es2022',metafile:true,define:{'process.env.NODE_ENV':'"production"'},loader:{'.woff2':'file','.woff':'file','.svg':'file'}});
+writeFileSync('.fixture-build/editor.html','<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>'+data.manifest.label+'</title><link rel="stylesheet" href="/private-assets/editor.css"></head><body><div id="fixture-editor"></div><script type="module" src="/private-assets/editor.js"></script></body></html>');
+writeFileSync('.fixture-build/build-meta.json',JSON.stringify({editor:result.metafile,publicResources:['/public.css'],productionAuthenticationClaimed:false},null,2)+'\n');
+console.log('CMS_FIXTURE_BUILD '+JSON.stringify({bundler:'esbuild',publicReactPrerender:true,privateEditorBundle:true,publicEditorCSS:false,backendDependenciesRequired:false}));

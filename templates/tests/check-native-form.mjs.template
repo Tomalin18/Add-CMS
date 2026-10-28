@@ -1,0 +1,6 @@
+import {register,createRequire} from 'node:module';
+import {Window} from 'happy-dom';
+register(new URL('./ignore-styles.mjs',import.meta.url));const require=createRequire(import.meta.url);require.extensions['.css']=()=>{};require.extensions['.scss']=()=>{};
+const win=new Window({url:'http://127.0.0.1:4319/admin',settings:{disableJavaScriptFileLoading:true,disableCSSFileLoading:true,disableIframePageLoading:true}});
+for(const name of new Set(['window','document','navigator','screen','localStorage','sessionStorage','Element','Node','Text','Document','DocumentFragment','MutationObserver','ResizeObserver','IntersectionObserver','ShadowRoot','InputEvent','Event','NodeFilter','DOMRect','DOMParser','CSS',...Object.getOwnPropertyNames(win).filter(name=>/^(HTML|SVG)|Event$/.test(name))]))Object.defineProperty(globalThis,name,{value:name==='window'?win:win[name],configurable:true});for(const name of ['getComputedStyle','requestAnimationFrame','cancelAnimationFrame'])globalThis[name]=win[name].bind(win);globalThis.IS_REACT_ACT_ENVIRONMENT=true;
+try{await import('./check-native-form.tsx');}finally{await win.happyDOM.abort();}process.exit(0);

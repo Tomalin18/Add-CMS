@@ -1,0 +1,50 @@
+{
+  "page": {
+    "id": 1,
+    "key": "museum-page",
+    "updatedAt": "a",
+    "content": {
+      "title": "展示案内"
+    }
+  },
+  "published": {
+    "id": 1,
+    "key": "museum-settings",
+    "updatedAt": "b",
+    "settings": {
+      "name": "公開名称",
+      "footer": "公開フッター"
+    }
+  },
+  "draft": {
+    "id": 1,
+    "key": "museum-settings",
+    "updatedAt": "c",
+    "settings": {
+      "name": "別担当者の下書き",
+      "footer": "公開フッター"
+    }
+  },
+  "ownFooter": "担当者が変更したフッター",
+  "manifest": {
+    "key": "museum-settings",
+    "publicPath": "/exhibitions",
+    "label": "共通情報",
+    "fields": [
+      {
+        "id": "brandName",
+        "path": "settings.name",
+        "inline": true,
+        "plain": true,
+        "label": "名称"
+      },
+      {
+        "id": "footerText",
+        "path": "settings.footer",
+        "inline": true,
+        "plain": true,
+        "label": "フッター"
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+'use client';
+import React,{createContext,useCallback,useContext,useLayoutEffect,useRef,useState} from 'react';
+import {Form,useForm,useWatchForm} from '@payloadcms/ui';
+import type {FormProps} from '@payloadcms/ui/forms/Form';
+import {CanvasFlushError,createCanvasSubmitPipeline} from './canvas-flush';
+const CanvasSubmitContext=createContext<ReturnType<typeof useForm>|null>(null);
+type Props=Omit<FormProps,'el'|'waitForAutocomplete'|'action'> & {action:string;method?:'DELETE'|'GET'|'PATCH'|'POST';failureMessage:string};
+/** Supported native Form composition for a custom document view; not a patch of DefaultEditView. */
+export function PayloadCanvasForm({failureMessage,children,action,...props}:Props){
+ return <Form {...props} el="div" waitForAutocomplete={false}><SubmitBoundary action={action} disabled={Boolean(props.disabled||props.isInitializing)} failureMessage={failureMessage}>{children}</SubmitBoundary></Form>;
+}
+function SubmitBoundary({children,disabled,failureMessage,action}:{action:string;children:React.ReactNode;disabled:boolean;failureMessage:string}){
+ const native=useForm(),watch=useWatchForm(),node=useRef<HTMLFormElement>(null),current=useRef(native),blocked=useRef(disabled),mounted=useRef(true),initialized=useRef(false),waiters=useRef<Set<()=>void>>(new Set());
+ current.current=native;blocked.current=disabled;const [error,setError]=useState('');
+ const wake=()=>{if(current.current.formRef.current?.getAttribute('data-form-ready')==='true')initialized.current=true;for(const run of [...waiters.current])run();};
+ useLayoutEffect(wake);
+ useLayoutEffect(()=>{mounted.current=true;return()=>{mounted.current=false;wake();};},[]);
+ const failure=useRef(failureMessage);failure.current=failureMessage;const defaultAction=useRef(action);defaultAction.current=action;
+ const ready=useCallback(()=>new Promise<void>((resolve,reject)=>{
+  const finish=(error?:Error)=>{clearTimeout(timer);waiters.current.delete(check);error?reject(error):resolve();};
+  const check=()=>{if(!mounted.current)return finish(new CanvasFlushError('closed'));if(blocked.current||current.current.initializing)return finish(new CanvasFlushError('not_ready'));if(current.current.formRef.current?.getAttribute('data-form-ready')==='true')initialized.current=true;if(!current.current.disabled&&initialized.current)finish();};
+  const timer=setTimeout(()=>finish(new CanvasFlushError('not_ready')),5000);waiters.current.add(check);check();
+ }),[]);
+ const pipeline=useRef<ReturnType<typeof createCanvasSubmitPipeline>|null>(null);
+ if(!pipeline.current)pipeline.current=createCanvasSubmitPipeline({form:()=>current.current.formRef.current,ready,submit:options=>{const endpoint=options.action??defaultAction.current;if(typeof endpoint!=='string'||new URL(endpoint,window.location.origin).origin!==window.location.origin||Boolean(new URL(endpoint,window.location.origin).username||new URL(endpoint,window.location.origin).password))throw new CanvasFlushError('not_ready');return current.current.submit({...options,action:endpoint});},onStart:()=>setError(''),onError:()=>setError(failure.current),onUnconfirmed:()=>current.current.setModified(true)});
+ const submit=pipeline.current;
+ // The native SDK context is never patched. Every supplied controller explicitly uses this one submit port.
+ const value={...native,submit};
+ return <CanvasSubmitContext.Provider value={value}><form ref={node} noValidate onSubmit={event=>{void submit({overrides:{_status:'draft'}},event).catch(()=>{});}}>{error&&<p role="alert">{error}</p>}{children}</form></CanvasSubmitContext.Provider>;
+}
+export function useCanvasForm(){const value=useContext(CanvasSubmitContext);if(!value)throw new CanvasFlushError('not_ready');return value;}
+export const useCanvasFormBoundary=()=>Boolean(useContext(CanvasSubmitContext));

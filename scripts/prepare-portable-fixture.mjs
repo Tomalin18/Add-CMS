@@ -1,0 +1,16 @@
+import {createPinnedLock} from './pinned-lock.mjs';
+import {readFileSync,writeFileSync,mkdirSync,cpSync,existsSync,renameSync} from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const destination=path.resolve(process.argv[2]||'');
+if(!process.argv[2]||existsSync(destination))throw Error('Choose a new isolated fixture directory.');
+const source=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),runtime=JSON.parse(readFileSync(path.join(source,'package.json'),'utf8')),base=JSON.parse(readFileSync(path.join(source,'locks/fixture.json'),'utf8'));
+const dev={'@types/node':'22.19.13','@types/react':'19.2.14','@types/react-dom':'19.2.3',typescript:'5.8.3',tsx:'4.21.0',esbuild:'0.27.3'};
+const lockFor=(pkg,extra={})=>createPinnedLock(base,pkg,extra);
+mkdirSync(destination,{recursive:true});cpSync(path.join(source,'src'),path.join(destination,'runtime/src'),{recursive:true});cpSync(path.join(source,'LICENSE'),path.join(destination,'runtime/LICENSE'));writeFileSync(path.join(destination,'runtime/package.json'),JSON.stringify(runtime,null,2)+'\n');writeFileSync(path.join(destination,'runtime/package-lock.json'),JSON.stringify(lockFor(runtime),null,2)+'\n');
+cpSync(path.join(source,'fixtures'),path.join(destination,'fixture'),{recursive:true});renameSync(path.join(destination,'fixture/Editor.tsx.template'),path.join(destination,'fixture/Editor.tsx'));cpSync(path.join(source,'data/mock/alternate-site.json'),path.join(destination,'fixture/alternate-site.json'));
+runtime.exports['./editor.css']='./src/editor.css';writeFileSync(path.join(destination,'runtime/package.json'),JSON.stringify(runtime,null,2)+'\n');
+const pkg={name:'add-cms-portability-fixture',version:runtime.version,private:true,type:'module',scripts:{test:'node --import tsx fixture/verify.mjs',build:'node fixture/build.mjs',types:'tsc --noEmit'},dependencies:{...runtime.dependencies,...runtime.peerDependencies,'@add-cms/core':'file:./runtime'},devDependencies:dev};
+writeFileSync(path.join(destination,'package.json'),JSON.stringify(pkg,null,2)+'\n');const local={version:runtime.version,dependencies:runtime.dependencies,peerDependencies:runtime.peerDependencies};writeFileSync(path.join(destination,'package-lock.json'),JSON.stringify(lockFor(pkg,{'node_modules/@add-cms/core':{resolved:'runtime',link:true},runtime:local}),null,2)+'\n');
+writeFileSync(path.join(destination,'tsconfig.json'),JSON.stringify({compilerOptions:{target:'ES2022',lib:['ES2022','DOM','DOM.Iterable'],module:'ESNext',moduleResolution:'bundler',skipLibCheck:true,isolatedModules:true,jsx:'react-jsx',noEmit:true,strict:false,esModuleInterop:true,resolveJsonModule:true},include:['**/*.ts','**/*.tsx'],exclude:['node_modules','.fixture-build']},null,2)+'\n');
+console.log('CMS_PORTABLE_PREPARED '+JSON.stringify({directory:destination,runtimeFilesFromCanonical:true,siteContentIncluded:false,rootLockEntries:Object.keys(base.packages).length,fixtureLockEntries:Object.keys(lockFor(pkg).packages).length,hostTailwindIncluded:false,productionAuthClaimed:false}));

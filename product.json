@@ -1,0 +1,6 @@
+{
+  "name": "Add CMS",
+  "slug": "add-cms",
+  "package": "@add-cms/core",
+  "repository": "https://github.com/Tomalin18/Add-CMS"
+}

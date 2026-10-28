@@ -1,0 +1,38 @@
+{
+  "name": "async-mutex",
+  "version": "0.5.0",
+  "license": "MIT",
+  "repository": {
+    "url": "git+https://github.com/DirtyHairy/async-mutex.git",
+    "type": "git"
+  },
+  "gitHead": "ca071fca1a72e00bc9bb02626c88393eefe63695",
+  "dependencies": {
+    "tslib": "^2.4.0"
+  },
+  "dist": {
+    "shasum": "353c69a0b9e75250971a64ac203b0ebfddd75482",
+    "tarball": "https://registry.npmjs.org/async-mutex/-/async-mutex-0.5.0.tgz",
+    "fileCount": 28,
+    "integrity": "sha512-1A94B18jkJ3DYq284ohPxoXbfTA5HsQ7/Mf4DEhcyLx3Bz27Rh59iScbB6EPiP+B+joue6YCxcMXSbFC1tZKwA==",
+    "signatures": [
+      {
+        "sig": "MEUCIQCCZtw5m8CXI/ClYTIlb+FSPesRvrwuotIHI0RR6PkoUAIgPJLQJDjKPyQoqXsTph6/6RZBMkj91nx1kFSnNWBvNLw=",
+        "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA"
+      }
+    ],
+    "unpackedSize": 63046
+  },
+  "noticeFile": "package/LICENSE",
+  "noticeSHA256": "afdf40d8e1d2478ab7ee49dfa0e75847033d59ed70c4368ddd4846f1eab2ff9e",
+  "closure": [
+    {
+      "name": "tslib",
+      "version": "2.8.1",
+      "license": "0BSD",
+      "notice": "tslib-LICENSE.txt",
+      "source": "https://github.com/microsoft/tslib",
+      "scope": "existing pinned transitive dependency; no version change"
+    }
+  ]
+}

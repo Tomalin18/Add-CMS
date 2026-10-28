@@ -1,0 +1,51 @@
+{
+  "manifest": {
+    "key": "museum-collection",
+    "publicPath": "/exhibitions",
+    "label": "展示案内",
+    "fields": [
+      {
+        "id": "museumTitle",
+        "path": "content.heading",
+        "inline": true,
+        "label": "見出し"
+      },
+      {
+        "id": "museumBody",
+        "path": "content.body",
+        "inline": false,
+        "label": "本文"
+      },
+      {
+        "id": "museumHours",
+        "path": "content.hours",
+        "inline": true,
+        "plain": true,
+        "nativeText": true,
+        "label": "開館時間"
+      }
+    ]
+  },
+  "initial": {
+    "museumTitle": "<p>展示案内</p>",
+    "museumBody": "<p>最初の段落</p><p>次の段落</p>",
+    "museumHours": "午前10時から午後5時"
+  },
+  "edit": "更新した展示案内",
+  "copy": {
+    "edit": "編集",
+    "preview": "プレビュー",
+    "save": "下書きを保存",
+    "saving": "保存中",
+    "saved": "保存しました",
+    "failed": "保存できませんでした",
+    "settings": "公開・SEO設定",
+    "bold": "太字",
+    "italic": "斜体",
+    "bullet": "箇条書き",
+    "ordered": "番号付きリスト",
+    "apply": "適用",
+    "cancel": "キャンセル"
+  },
+  "editPlain": "午前9時から午後6時"
+}

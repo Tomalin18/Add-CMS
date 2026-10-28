@@ -1,0 +1,49 @@
+/** One native Payload form owns one canvas; nested forms cannot flush another document. */
+const flushCodes=['not_ready','sync_failed','sync_timeout','invalid_fields','pending','closed','upload_pending'] as const;
+export type CanvasFlushCode=typeof flushCodes[number];
+export class CanvasFlushError extends Error{code:CanvasFlushCode;constructor(code:unknown){const safe=flushCodes.find(value=>value===code)||'sync_failed';super(safe);this.code=safe;}}
+type Flush = () => Promise<() => void>;
+const bridges = new WeakMap<HTMLElement, Flush>();
+export function registerCanvasFlush(form: HTMLElement, flush: Flush) {
+  bridges.set(form, flush);
+  return () => { if (bridges.get(form) === flush) bridges.delete(form); };
+}
+export async function flushCanvas(form: HTMLElement) {
+  const flush = bridges.get(form);
+  if (!flush) throw new CanvasFlushError('not_ready');
+  return flush();
+}
+
+export class NativeDraftResultError extends Error{constructor(public status?:number){super('native_unconfirmed');}}
+type NativeDraftPort={formRef:{current:HTMLElement|null};submit:(options:any)=>Promise<any>};
+/** Same native form writer; no page-key dependency or second endpoint for manual draft saving. */
+const pipelineSubmits=new WeakSet<Function>();
+export function createCanvasSubmitPipeline(port:{form:()=>HTMLElement|null;ready:()=>Promise<void>;submit:(options:any)=>Promise<any>;onStart?:()=>void;onError?:(error:unknown)=>void;onUnconfirmed?:()=>void}){
+ let tail:Promise<unknown>=Promise.resolve();
+ const submit=(options:any={},event?:{preventDefault:()=>void;stopPropagation:()=>void})=>{
+  event?.preventDefault();event?.stopPropagation();
+  const run=async()=>{
+   port.onStart?.();
+   await port.ready();const form=port.form();if(!form)throw new CanvasFlushError('closed');
+   const release=await flushCanvas(form);let released=false;
+   const unlock=()=>{if(!released){released=true;release();}};
+   try{
+    // Payload 3.92 snapshots synchronously before its first await when waitForAutocomplete=false.
+    // Release the frame after that snapshot so typing during background HTTP remains possible.
+    if(port.form()!==form)throw new CanvasFlushError('closed');
+    const response=port.submit(options);unlock();const result=await response;
+    if(!result?.res?.ok){port.onUnconfirmed?.();throw new NativeDraftResultError(result?.res?.status);}
+    return result;
+   }finally{unlock();}
+  };
+  const result=tail.then(run).catch(error=>{port.onError?.(error);if(options.context?.canvasControl)throw error;return undefined;});tail=result.then(()=>undefined,()=>undefined);return result;
+ };
+ pipelineSubmits.add(submit);return submit;
+}
+export async function submitCanvasDraft(getForm:()=>NativeDraftPort,target:{collection:string;id:number|string},beforeSubmit:()=>void){
+ if(!pipelineSubmits.has(getForm().submit))throw new CanvasFlushError('not_ready');
+ beforeSubmit();
+ const result=await getForm().submit({action:'/api/'+target.collection+'/'+encodeURIComponent(String(target.id))+'?draft=true&depth=0',method:'PATCH',overrides:{_status:'draft'},skipValidation:true,disableSuccessStatus:true,context:{canvasControl:true}});
+ if(!result?.res?.ok)throw new NativeDraftResultError(result?.res?.status);
+ return result;
+}

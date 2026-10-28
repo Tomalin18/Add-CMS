@@ -1,0 +1,25 @@
+import {createHash} from 'node:crypto';
+import {APIError,type Field} from 'payload';
+export type MediaPublicationOptions={collection:string;authCollection:string;isStaff:(user:any)=>boolean;canPublish:(user:any)=>boolean;copy:{failed:string;publisherRequired:string;unknown:(name:string)=>string;otherAuthor:(name:string)=>string;changed:(name:string)=>string}};
+const keys=['alt','source','filename','mimeType','filesize','width','height','focalX','focalY'] as const;
+/** Metadata identity, not a file-byte digest. The host must forbid same-ID byte/identity replacement. */
+export function mediaUploadFingerprint(asset:any){return createHash('sha256').update(JSON.stringify(keys.map(key=>[key,asset[key]??(key==='focalX'||key==='focalY'?50:null)]))).digest('hex');}
+/** Install only after an explicitly authorized additive schema migration. No schema push or backfill here. */
+export function createPayloadMediaPublication(options:MediaPublicationOptions){
+ const fields:Field[]=[{name:'uploadedBy',type:'relationship',relationTo:options.authCollection as any,index:true,admin:{hidden:true},access:{create:()=>false,update:()=>false,read:()=>false}},{name:'uploadFingerprint',type:'text',admin:{hidden:true},access:{create:()=>false,update:()=>false,read:()=>false}}];
+ function stamp({data,operation,req}:any){if(operation!=='create'){delete data.uploadedBy;delete data.uploadFingerprint;return data;}data.uploadedBy=options.isStaff(req.user)?req.user.id:null;data.uploadFingerprint=options.isStaff(req.user)?mediaUploadFingerprint(data):null;return data;}
+ async function ensurePublished(asset:any,req:any){
+  if(asset.visibility==='published')return;
+  if(!options.canPublish(req.user))throw new APIError(options.copy.publisherRequired,403);
+  if(!await req.transactionID)throw new APIError(options.copy.failed,503);
+  // Call only after the site's reference read ACL and MIME/signature/size validation.
+  const stored:any=await req.payload.findByID({collection:options.collection,id:asset.id,depth:0,overrideAccess:true,req,select:Object.fromEntries([...keys,'visibility','uploadedBy','uploadFingerprint'].map(key=>[key,true]))});
+  if(stored.visibility==='published')return;
+  const name=String(stored.filename||asset.id).slice(0,255),owner=typeof stored.uploadedBy==='object'?stored.uploadedBy?.id:stored.uploadedBy;
+  if(!owner||!stored.uploadFingerprint)throw new APIError(options.copy.unknown(name),400);
+  if(String(owner)!==String(req.user.id))throw new APIError(options.copy.otherAuthor(name),400);
+  if(stored.uploadFingerprint!==mediaUploadFingerprint(stored))throw new APIError(options.copy.changed(name),400);
+  await req.payload.update({collection:options.collection,id:asset.id,data:{visibility:'published'},depth:0,overrideAccess:false,user:req.user,req});
+ }
+ return{fields,stamp,ensurePublished};
+}

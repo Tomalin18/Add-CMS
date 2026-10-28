@@ -1,0 +1,12 @@
+import {cpSync,readFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),target=path.resolve(process.argv[2]||'');
+if(!process.argv[2])throw Error('Provide a new temporary fixture directory.');
+execFileSync(process.execPath,[path.join(skill,'scripts/install-fixture.mjs'),target],{stdio:'inherit'});
+cpSync(path.join(skill,'assets/integration'),path.join(target,'integration'),{recursive:true});
+for(const file of ['package.json','package-lock.json'])cpSync(path.join(skill,'assets/payload-fixture',file),path.join(target,file));
+const pkg=JSON.parse(readFileSync(path.join(target,'package.json'),'utf8'));
+if(pkg.dependencies['@payloadcms/ui']!=='3.92.0'||pkg.dependencies['async-mutex']!=='0.5.0')throw Error('Pinned Payload fixture missing.');
+console.log('CMS_PAYLOAD_FIXTURE_INSTALLED '+JSON.stringify({temporaryOnly:true,actualBundledLock:true,productionConfigurationChanged:false}));

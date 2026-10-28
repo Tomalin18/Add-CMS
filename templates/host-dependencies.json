@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "payload": "3.92.0",
+    "@payloadcms/db-sqlite": "3.92.0",
+    "@payloadcms/ui": "3.92.0",
+    "async-mutex": "0.5.0"
+  },
+  "sqliteMode": "one Payload owner process per file; serialize transaction entry; external SQLITE_BUSY requires controlled owner restart before accepting writes"
+}

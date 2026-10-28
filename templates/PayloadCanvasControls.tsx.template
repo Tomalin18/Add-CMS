@@ -1,0 +1,34 @@
+'use client';
+import React,{useEffect,useState} from 'react';
+import {FormSubmit,useAllFormFields,useFormModified,useFormInitializing,useDocumentInfo,useConfig,useLocale,useDebounce} from '@payloadcms/ui';
+import {hasDraftValidationEnabled} from 'payload/shared';
+import {useCanvasForm} from './PayloadCanvasForm';
+function target(api:string,collection:string,id:string|number,locale:string|undefined,autosave:boolean){
+ const query=new URLSearchParams({depth:'0',...(locale?{locale}:{}),...(autosave?{draft:'true',autosave:'true','fallback-locale':'null'}:{})});
+ return api+'/'+encodeURIComponent(collection)+'/'+encodeURIComponent(String(id))+'?'+query;
+}
+/** Fixed existing collection documents only. Uses native Form.submit, not a second endpoint or writer. */
+export function PayloadCanvasPublish({label}:{label:string}){
+ const form=useCanvasForm(),info=useDocumentInfo(),{config}=useConfig(),{code}=useLocale();
+ const [busy,setBusy]=useState(false);const modified=useFormModified();
+ if(!info.hasPublishPermission)return null;
+ const hasSavedDraft=Boolean(info.unpublishedVersionCount)||info.data?._status==='draft';
+ const disabled=busy||form.disabled||info.uploadStatus==='uploading'||(!modified&&!hasSavedDraft&&info.hasPublishedDoc);
+ return <FormSubmit type="button" buttonId="action-save" size="medium" disabled={disabled} onClick={async()=>{
+  if(disabled||!info.collectionSlug||!info.id)return;setBusy(true);
+  try{const result=await form.submit({action:target(config.routes.api,info.collectionSlug,info.id,code,false),method:'PATCH',overrides:{_status:'published'}});if(result && result.res.ok){info.setUnpublishedVersionCount(0);info.setMostRecentVersionIsAutosaved(false);info.setHasPublishedDoc(true);}}
+  finally{setBusy(false);}
+ }}>{label}</FormSubmit>;
+}
+/** Use in the custom mapped-document view instead of the default DocumentControls Autosave. */
+export function PayloadCanvasAutosave({interval=1500,copy}:{interval?:number;copy:{saving:string;failed:string}}){
+ const form=useCanvasForm(),info=useDocumentInfo(),{config}=useConfig(),{code}=useLocale(),[fields]=useAllFormFields(),modified=useFormModified(),initializing=useFormInitializing();
+ const debounced=useDebounce(fields,Math.max(80,interval));const [status,setStatus]=useState('');
+ useEffect(()=>{
+  if(!modified||initializing||!info.hasSavePermission||!info.collectionSlug||!info.id||info.uploadStatus==='uploading')return;
+  let active=true;setStatus(copy.saving);
+  void form.submit({action:target(config.routes.api,info.collectionSlug,info.id,code,true),method:'PATCH',overrides:{_status:'draft'},disableFormWhileProcessing:false,disableSuccessStatus:true,acceptValues:{overrideLocalChanges:false},skipValidation:!hasDraftValidationEnabled(info.docConfig)}).then(result=>{if(active)setStatus(result && result.res.ok?'':copy.failed);});
+  return()=>{active=false;};
+ },[debounced]);
+ return status?<span role="status">{status}</span>:null;
+}

@@ -1,0 +1,10 @@
+"use client";
+import React,{useCallback,useRef} from 'react';
+import {PuckShell} from '@add-cms/core/client';
+import fixture from './alternate-site.json';
+export default function Editor(){
+ const record=useRef(fixture.initial);
+ const receive=useCallback((values:Record<string,string>)=>{record.current=values as typeof fixture.initial;},[]);
+ const render=useCallback((values:Record<string,React.ReactNode>)=><article><div role="heading" aria-level={1}>{values.museumTitle}</div><section>{values.museumBody}</section><p>{values.museumHours}</p></article>,[]);
+ return <PuckShell manifest={fixture.manifest} initial={{values:fixture.initial,key:fixture.manifest.key,documentId:'museum-one',revision:'a'.repeat(64)}} adapter={{save:async()=>{throw Error('The fixture managed form is the only writer');}}} managed onValuesChange={receive} plainCopy={{apply:fixture.copy.apply,cancel:fixture.copy.cancel,changed:fixture.copy.failed}} copy={fixture.copy} styles={()=>({})} settingsURL="/admin/settings" renderPage={render}/>;
+}

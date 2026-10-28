@@ -1,0 +1,24 @@
+'use client';
+import {useEffect,useRef,type RefObject} from 'react';
+import {acceptsBridgeMessage} from '@add-cms/core/form-bridge';
+/** Frame-side protocol. Pass the same snapshot ref to PuckShell; onValuesChange sends cms:fields before ACK. */
+export function useCanvasFrameBridge(options:{channel:string;snapshot:RefObject<(()=>Promise<void>)|null>;uploading:boolean;onForm:(data:any)=>void}){
+ const latest=useRef(options);latest.current=options;
+ useEffect(()=>{
+  const channel=options.channel;let flushing:string|null=null,previousInert=false;
+  const release=()=>{if(flushing){document.body.inert=previousInert;flushing=null;}};
+  const receive=(event:MessageEvent)=>{
+   if(!acceptsBridgeMessage(event,window.location.origin,window.parent,channel))return;
+   if(event.data.type==='cms:form'){latest.current.onForm(event.data);return;}
+   if(event.data.type==='cms:flush-release'&&event.data.requestId===flushing){release();return;}
+   if(event.data.type!=='cms:flush-request'||typeof event.data.requestId!=='string')return;
+   const requestId=event.data.requestId;
+   if(flushing||latest.current.uploading||!latest.current.snapshot.current){window.parent.postMessage({type:'cms:flush-error',channel,requestId,code:latest.current.uploading?'upload_pending':'not_ready'},window.location.origin);return;}
+   flushing=requestId;previousInert=document.body.inert;document.body.inert=true;
+   void latest.current.snapshot.current().then(()=>{if(flushing===requestId)window.parent.postMessage({type:'cms:flushed',channel,requestId},window.location.origin);}).catch(()=>{if(flushing!==requestId)return;release();window.parent.postMessage({type:'cms:flush-error',channel,requestId,code:'sync_failed'},window.location.origin);});
+  };
+  window.addEventListener('message',receive);window.parent.postMessage({type:'cms:ready',channel},window.location.origin);
+  return()=>{window.removeEventListener('message',receive);release();};
+ },[options.channel]);
+ useEffect(()=>{window.parent.postMessage({type:'cms:upload-state',channel:options.channel,uploading:options.uploading},window.location.origin);},[options.channel,options.uploading]);
+}

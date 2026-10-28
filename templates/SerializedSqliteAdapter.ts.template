@@ -1,0 +1,30 @@
+import {Mutex} from 'async-mutex';
+import {APIError} from 'payload';
+/** Single-owner SQLite process only. Wrap public adapter/Drizzle methods, never vendor sessions or source. */
+export function serializeSqliteTransactions<T extends {init:(...args:any[])=>any}>(factory:T,copy:{unavailable:string}):T{
+ if((factory as any).name!=='sqlite')throw new Error(copy.unavailable);
+ return {...factory,init:(...args:any[])=>{const adapter=factory.init(...args),mutex=new Mutex();
+  type Outcome={ok:true}|{ok:false;error:any};
+  const active=new Map<any,{release:()=>void;completion:Promise<Outcome>}>();let poisoned=false;
+  const begin=adapter.beginTransaction?.bind(adapter),commit=adapter.commitTransaction.bind(adapter),rollback=adapter.rollbackTransaction.bind(adapter);if(!begin)throw new Error(copy.unavailable);
+  adapter.beginTransaction=async(...input:any[])=>{const release=await mutex.acquire();try{
+   if(poisoned)throw new APIError(copy.unavailable,503);
+   await adapter.initializing;
+   const drizzle=adapter.drizzle,transaction=drizzle?.transaction;if(typeof transaction!=='function')throw new APIError(copy.unavailable,503);
+   let completion:Promise<Outcome>|undefined;
+   // Payload 3.92's generic commit adapter can swallow a rejected Drizzle transaction.
+   // Observe the original public transaction promise during BEGIN, then restore the method.
+   drizzle.transaction=function(...parameters:any[]){const result=transaction.apply(this,parameters);completion=Promise.resolve(result).then(()=>({ok:true as const}),error=>({ok:false as const,error}));return result;};
+   let id:any;try{id=await begin(...input);}finally{drizzle.transaction=transaction;}
+   if(!id||!completion){if(id)await rollback(id);throw new APIError(copy.unavailable,503);}
+   active.set(id,{release,completion});return id;
+  }catch(error:any){if(String(error?.message).includes('SQLITE_BUSY'))poisoned=true;release();throw error;}};
+  const finish=(operation:(id:any)=>Promise<any>,committing=false)=>async(incoming:any)=>{
+   const id=await incoming,scope=active.get(id);
+   try{const result=await operation(id);const outcome=await scope?.completion;if(committing&&outcome?.ok===false)throw outcome.error;return result;}
+   catch(error:any){if(committing){try{await rollback(id);}catch{}await scope?.completion;}if(String(error?.message).includes('SQLITE_BUSY'))poisoned=true;throw error;}
+   finally{active.delete(id);scope?.release();}
+  };
+  adapter.commitTransaction=finish(commit,true);adapter.rollbackTransaction=finish(rollback);return adapter;
+ }} as T;
+}

@@ -1,0 +1,27 @@
+import type { Config, CustomComponent } from 'payload';
+
+export type PayloadAdminBrandOptions = {
+  name: string;
+  Logo: CustomComponent;
+  Icon: CustomComponent;
+  faviconURL: string;
+  description?: string;
+};
+
+/** Payload's supported graphics and metadata slots; the host supplies its identity. */
+export function createPayloadAdminBrand(options: PayloadAdminBrandOptions): Pick<NonNullable<Config['admin']>, 'components' | 'meta'> {
+  const name = options.name.trim();
+  if (!name || name.length > 80 || /[\u0000-\u001f]/.test(name)) throw Error('A bounded brand name is required');
+  if (!/^\/(?!\/)[^\\\s<>]*$/.test(options.faviconURL)) throw Error('A same-origin favicon path is required');
+  return {
+    components: { graphics: { Logo: options.Logo, Icon: options.Icon } },
+    meta: {
+      titleSuffix: `- ${name}`,
+      applicationName: name,
+      description: options.description || '',
+      icons: [{ rel: 'icon', type: 'image/svg+xml', url: options.faviconURL }],
+      defaultOGImageType: 'off',
+      openGraph: { siteName: name, description: options.description || '' },
+    },
+  };
+}

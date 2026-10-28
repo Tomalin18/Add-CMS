@@ -1,0 +1,25 @@
+"use client";
+import React,{useEffect,useId,useRef,useState} from 'react';
+import {FieldLabel,useDocumentInfo,useField,useFormFields,useFormInitializing} from '@payloadcms/ui';
+import {Button} from 'react-aria-components';
+import {useFileChooser} from '@add-cms/core/FileChooser';
+import {createPayloadMediaUpload,DIRECT_MEDIA_TYPES} from './PayloadMediaUpload';
+export type PayloadImageFieldCopy={imageLabel:string;replaceImage:string;unlinkImage:string;imageUnavailable:string;saving:string;changed:string};
+/** A native relationship field value with an official local-file trigger, not another persistence writer. */
+export function createPayloadImageField(options:{collection:string;legacyPath?:string;altPath?:string;copy:PayloadImageFieldCopy}) {
+ const upload=createPayloadMediaUpload(options.collection);
+ return function PayloadImageField({path,readOnly=false}:{path:string;readOnly?:boolean}) {
+  const {value,setValue}=useField<number|null>({path});const info=useDocumentInfo();const initializing=useFormInitializing();const id=useId();
+  const legacy=useFormFields(([fields])=>options.legacyPath?String(fields[options.legacyPath]?.value||''):'');
+  const alt=useFormFields(([fields])=>options.altPath?String(fields[options.altPath]?.value||''):'');
+  const [asset,setAsset]=useState<{url:string;filename:string}|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  const current=useRef(value);current.current=value;const operation=useRef(false);const alive=useRef(true);
+  const chooser=useFileChooser(DIRECT_MEDIA_TYPES,{image:options.copy.replaceImage,file:options.copy.replaceImage,video:options.copy.replaceImage});
+  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+  useEffect(()=>{setAsset(null);setError('');if(!value)return;const abort=new AbortController();void fetch('/api/'+options.collection+'/'+encodeURIComponent(String(value))+'?depth=0',{credentials:'same-origin',cache:'no-store',signal:abort.signal}).then(async response=>{if(!response.ok)throw Error('asset');const doc=await response.json();const target=new URL(doc.url,window.location.origin);if(target.origin!==window.location.origin||!target.pathname.startsWith('/api/'+options.collection+'/file/'))throw Error('asset');setAsset({url:target.href,filename:String(doc.filename||'')});}).catch(()=>{if(!abort.signal.aborted)setError(options.copy.imageUnavailable);});return()=>abort.abort();},[value]);
+  const disabled=readOnly||initializing||!info.hasSavePermission||busy||info.uploadStatus==='uploading';
+  async function choose(){if(disabled||operation.current)return;operation.current=true;const baseline=current.current;let startedUpload=false;setError('');try{const file=await chooser.choose('image');if(!file)return;setBusy(true);startedUpload=true;info.setUploadStatus?.('uploading');const result=await upload(file,'image',alt||undefined);if(!alive.current)return;if(current.current!==baseline)throw Error('changed');setValue(result.id);}catch(error){if(alive.current)setError((error as Error).message==='changed'?options.copy.changed:options.copy.imageUnavailable);}finally{operation.current=false;if(alive.current)setBusy(false);if(startedUpload)info.setUploadStatus?.('idle');}}
+  const source=asset?.url||(!value&&/^\/(?!\/)[^\s\\<>]*$/.test(legacy)?legacy:'');
+  return <div className="retrofit-native-image-field" data-cms-native-image-field={path}><FieldLabel htmlFor={id} label={options.copy.imageLabel}/>{source&&<img src={source} alt={alt} width={240} height={150}/>}<div className="retrofit-native-image-field__actions"><Button id={id} type="button" isDisabled={disabled} onPress={()=>void choose()}>{busy?options.copy.saving:options.copy.replaceImage}</Button>{value&&<Button type="button" isDisabled={disabled} onPress={()=>setValue(null)}>{options.copy.unlinkImage}</Button>}</div>{asset?.filename&&<span className="retrofit-native-image-field__filename">{asset.filename}</span>}{error&&<p role="alert">{error}</p>}{chooser.controls}</div>;
+ };
+}

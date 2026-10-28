@@ -1,0 +1,65 @@
+'use client';
+import React, { useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import {FormSubmit,useDocumentInfo,useFormInitializing,useFormProcessing,useFormBackgroundProcessing} from '@payloadcms/ui';
+import {useCanvasForm} from './PayloadCanvasForm';
+import { submitCanvasDraft,CanvasFlushError,NativeDraftResultError } from './canvas-flush';
+
+/** Save through the same native form. Preview never changes the publication state. */
+export function createPayloadDraftPreview(options:{previewURL:(key:string)=>string;copy:{preview:string;save:string;saving:string;saved:string;popupBlocked:string;conflict:string;saveErrors:Record<string,string>}}){
+ return function PayloadDraftPreview() {
+  const form = useCanvasForm();
+  const { id, collectionSlug, uploadStatus,data:documentData } = useDocumentInfo();
+  const initializing=useFormInitializing(),processing=useFormProcessing(),background=useFormBackgroundProcessing();
+  const [busy, setBusy] = useState(false), [error, setError] = useState(''), [status,setStatus]=useState('');
+  const running = useRef(false);
+  const current = useRef(form); current.current = form;
+  async function saveDraft(openPreview:boolean) {
+    if (running.current || initializing || processing || background || uploadStatus === 'uploading') return;
+    // Reserve the tab during the user gesture, then sever its opener before navigation.
+    const tab = openPreview ? window.open('about:blank', '_blank') : null;
+    if (openPreview && !tab) { setError(options.copy.popupBlocked); return; }
+    if(tab)tab.opener = null;
+    running.current = true; setBusy(true); setError('');setStatus('');
+    let stage:string='flush';let responseStatus:number|null=null;
+    try {
+      flushSync(() => { current.current.setDisabled(true); current.current.setProcessing(true); });
+      const result=await submitCanvasDraft(()=>current.current,{collection:collectionSlug,id},()=>{
+        // submit checks the current disabled flag before taking its native snapshot.
+        flushSync(()=>current.current.setDisabled(false));stage='submit';
+      });
+      responseStatus=result.res.status;
+      if(tab){
+        stage='preview';
+        const key=current.current.getFields().key?.value??documentData?.key;
+        if(typeof key!=='string'||!key)throw Error('Missing page');
+        const target=new URL(options.previewURL(key),window.location.origin);
+        if(target.origin!==window.location.origin)throw Error('Invalid preview origin');
+        tab.location.replace(target.href);
+      }else setStatus(options.copy.saved);
+    } catch (error) {
+      if(error instanceof NativeDraftResultError)responseStatus=error.status??null;
+      const code=error instanceof CanvasFlushError?error.code:stage==='flush'?'sync_failed':stage==='submit'?'native_unconfirmed':'preview_failed';
+      // Static stage/code/status only. Never log content, URLs, field values, tokens or account identifiers.
+      console.warn('CMS_SAVE_FAILURE',{stage,code,status:responseStatus});
+      tab?.close();setError(responseStatus===409?options.copy.conflict:options.copy.saveErrors[code]);
+    } finally {
+      current.current.setDisabled(false); current.current.setProcessing(false);
+      running.current = false; setBusy(false);
+    }
+  }
+  return <span className="retrofit-draft-preview">
+    <FormSubmit buttonId="action-draft-preview" type="button" buttonStyle="secondary" size="medium"
+      disabled={busy || initializing || processing || background || uploadStatus === 'uploading'} onClick={() => void saveDraft(true)}>
+      {busy ? options.copy.saving : options.copy.preview}
+    </FormSubmit>
+    <FormSubmit buttonId="action-draft-save" type="button" buttonStyle="secondary" size="medium"
+      disabled={busy || initializing || processing || background || uploadStatus === 'uploading'} onClick={() => void saveDraft(false)}>
+      {busy ? options.copy.saving : options.copy.save}
+    </FormSubmit>
+    {status && <span role="status">{status}</span>}
+    {error && <span role="alert">{error}</span>}
+  </span>;
+}
+
+}

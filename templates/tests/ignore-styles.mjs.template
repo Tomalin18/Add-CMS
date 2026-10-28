@@ -1,0 +1,1 @@
+export async function load(url,context,next){if(/\.(css|scss)$/.test(url))return{format:'module',source:'export {};',shortCircuit:true};return next(url,context);}

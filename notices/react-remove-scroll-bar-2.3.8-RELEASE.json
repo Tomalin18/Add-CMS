@@ -1,0 +1,114 @@
+{
+  "name": "react-remove-scroll-bar",
+  "version": "2.3.8",
+  "declaredLicense": "MIT",
+  "author": "Anton Korzunov <thekashey@gmail.com>",
+  "repository": "https://github.com/theKashey/react-remove-scroll-bar",
+  "registryArtifact": "https://registry.npmjs.org/react-remove-scroll-bar/-/react-remove-scroll-bar-2.3.8.tgz",
+  "integrity": "sha512-9r+yi9+mgU33AKcj6IbT9oRCO78WriSj6t/cF8DWBZJ9aOGPOTEDvdUDz1FwKim7QXWwmHqtdHnRJfhAxEG46Q==",
+  "readmeLicenseExcerpt": "# License\nMIT",
+  "publishedGitHead": "b3b1287aad81def2e2ae707274b74531b61ddbaf",
+  "upstreamGitHeadResult": "Git tree API 422 invalid object; release tag v2.3.8 absent",
+  "fullNoticeSource": {
+    "version": "2.3.8",
+    "path": "notices/react-remove-scroll-bar-UPSTREAM-LICENSE.txt",
+    "url": "https://raw.githubusercontent.com/theKashey/react-remove-scroll-bar/7301c160fda44cb8cf2b9fdfde61efad35736196/LICENSE",
+    "basis": "Official pinned source at 7301c160fda44cb8cf2b9fdfde61efad35736196 carries this MIT notice. That commit only adds LICENSE to v2.3.7; all 12 emitted JavaScript files reproduce the npm 2.3.8 files byte-for-byte. No claim that the 2024 npm release included a LICENSE or had a 2025 copyright line.",
+    "sha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84"
+  },
+  "sourceCorrespondence": {
+    "status": "verified-byte-correspondence",
+    "sourceCommit": "7301c160fda44cb8cf2b9fdfde61efad35736196",
+    "sourceCommitURL": "https://github.com/theKashey/react-remove-scroll-bar/commit/7301c160fda44cb8cf2b9fdfde61efad35736196",
+    "compareURL": "https://github.com/theKashey/react-remove-scroll-bar/compare/29e9fcd1eecf7d3b77a767941c4a57fe461fc1e4...7301c160fda44cb8cf2b9fdfde61efad35736196",
+    "compareResult": "One commit; only LICENSE added; no source changes.",
+    "npm237To238": "All 26 non-package.json files are byte-identical. package.json only changes version and react-style-singleton dependency range.",
+    "compiler": "5.8.3",
+    "compilerOptions": {
+      "targetByDirectory": {
+        "es5": "ES5",
+        "es2015": "ES5",
+        "es2019": "ES2019"
+      },
+      "moduleByDirectory": {
+        "es5": "CommonJS",
+        "es2015": "ES2015",
+        "es2019": "ES2015"
+      },
+      "jsx": "React",
+      "esModuleInterop": true,
+      "importHelpers": true,
+      "alwaysStrict": true
+    },
+    "sourceFiles": {
+      "src/utils.ts": "c7d2d318bca380ff6a13ed35d1264cdfac9d9bc9389802f7bcacae24611865d1",
+      "src/constants.ts": "f597b4036280caca4cc58d3476ffc02dc5c16564090229e6685e98b80a8e2a33",
+      "src/component.tsx": "9cf7f1768847ee331747101493a5ed7860199f730fd814e85f37f05368e56b55",
+      "src/index.ts": "46c5f7a742c3838959d33077733e634aad9c5cfc4041bcd38dba5f7cf3e05200"
+    },
+    "emittedFiles": [
+      {
+        "file": "dist/es5/component.js",
+        "exactBytes": true,
+        "releaseSHA256": "d95ae68cda75b262f01b7c3eba3d530c6a24579778cbb3e320b2449348dabb13"
+      },
+      {
+        "file": "dist/es5/constants.js",
+        "exactBytes": true,
+        "releaseSHA256": "20bf238e562be0830b10b1813d36fa321e81cd07fd99b27724833132304b73bc"
+      },
+      {
+        "file": "dist/es5/index.js",
+        "exactBytes": true,
+        "releaseSHA256": "0e1ab245d6b12ef80409b988b0f29b498c562b6cff6e7365714cb0c351914a12"
+      },
+      {
+        "file": "dist/es5/utils.js",
+        "exactBytes": true,
+        "releaseSHA256": "ee6c64e8690475db96ec1a1b2ede342ffdc45ccf739bd28dd6f86c8c9a5917c3"
+      },
+      {
+        "file": "dist/es2015/component.js",
+        "exactBytes": true,
+        "releaseSHA256": "3baec61523006aedf14321423427b0c50aa17bfe48faf344bebff9d883149f29"
+      },
+      {
+        "file": "dist/es2015/constants.js",
+        "exactBytes": true,
+        "releaseSHA256": "1c73582ef730bbca1d536a6995c7eea438dcd0632fee2856337627e44b5872e2"
+      },
+      {
+        "file": "dist/es2015/index.js",
+        "exactBytes": true,
+        "releaseSHA256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f"
+      },
+      {
+        "file": "dist/es2015/utils.js",
+        "exactBytes": true,
+        "releaseSHA256": "2c4105ab772a5cbf4b3d1e54f49e94d03fde867d20767b46bb3e5c27f4d82f00"
+      },
+      {
+        "file": "dist/es2019/component.js",
+        "exactBytes": true,
+        "releaseSHA256": "ac214bb2783fdf743a0c949fef47784741db109dcc6f4426f46e77386dee1c8f"
+      },
+      {
+        "file": "dist/es2019/constants.js",
+        "exactBytes": true,
+        "releaseSHA256": "f597b4036280caca4cc58d3476ffc02dc5c16564090229e6685e98b80a8e2a33"
+      },
+      {
+        "file": "dist/es2019/index.js",
+        "exactBytes": true,
+        "releaseSHA256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f"
+      },
+      {
+        "file": "dist/es2019/utils.js",
+        "exactBytes": true,
+        "releaseSHA256": "dafd773a756cca848d359153df92315235becb2ed8e10b1146458be4bfd38826"
+      }
+    ],
+    "licenseSHA256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84",
+    "interpretation": "Retain the exact official notice for the source proven to produce these bytes. This is source correspondence, not a fabricated historical npm notice."
+  }
+}

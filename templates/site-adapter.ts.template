@@ -1,0 +1,20 @@
+import type React from 'react';
+import type {EditorManifest} from '@add-cms/core/manifest';
+import type {ImageConfig} from '@add-cms/core/ImageControls';
+import type {VideoConfig} from '@add-cms/core/VideoControls';
+import type {InlineControlConfig} from '@add-cms/core/InlineControls';
+/** Supplied by the target site; use its existing renderer and CMS data, never arbitrary DOM rewriting. */
+export type SiteAdapter={
+ manifest:(key:string,record:unknown)=>EditorManifest;
+ render:(key:string,slots:Record<string,React.ReactNode>,record:unknown)=>React.ReactNode;
+ validate:(document:unknown,inline:boolean)=>unknown;
+ controls:InlineControlConfig;
+ images?:ImageConfig;
+ videos?:VideoConfig;
+};
+/** Authenticated backend responsibilities. Implement with existing CMS roles and one transaction, never browser ownership. */
+export type PersistenceContract={
+ readAuthorizedDraft:(request:Request,key:string)=>Promise<unknown>;
+ revision:(record:unknown)=>string;
+ publishOwnPendingChanges:(request:Request,pageRevision:string,sharedRevision:string)=>Promise<unknown>;
+};
