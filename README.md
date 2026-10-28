@@ -12,7 +12,6 @@ An agent Skill and reusable components for adding a visual CMS to an existing Re
 
 [Read the Skill](SKILL.md) · [Integration guide](references/install.md) · [Adapter contract](references/adapter-contract.md)
 
-https://github.com/user-attachments/assets/e38ffbe1-c3a9-4af2-ab3b-2fa9000a3e9d
 
 The 73-second, 1080p product demonstration: original page → editing → image replacement → publication → updated page. The film uses UI animation with genuine editor states and verified synthetic content; login typing is synthetic.
 
