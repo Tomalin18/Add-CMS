@@ -1,5 +1,6 @@
 'use client';
 import React,{createContext,useCallback,useContext,useLayoutEffect,useRef,useState} from 'react';
+import {flushSync} from 'react-dom';
 import {Form,useForm,useWatchForm} from '@payloadcms/ui';
 import type {FormProps} from '@payloadcms/ui/forms/Form';
 import {CanvasFlushError,createCanvasSubmitPipeline} from './canvas-flush';
@@ -11,7 +12,7 @@ export function PayloadCanvasForm({failureMessage,children,action,...props}:Prop
 }
 function SubmitBoundary({children,disabled,failureMessage,action}:{action:string;children:React.ReactNode;disabled:boolean;failureMessage:string}){
  const native=useForm(),watch=useWatchForm(),node=useRef<HTMLFormElement>(null),current=useRef(native),blocked=useRef(disabled),mounted=useRef(true),initialized=useRef(false),waiters=useRef<Set<()=>void>>(new Set());
- current.current=native;blocked.current=disabled;const [error,setError]=useState('');
+ current.current=native;blocked.current=disabled;const [error,setError]=useState('');const [,acknowledgeCommit]=useState(0);
  const wake=()=>{if(current.current.formRef.current?.getAttribute('data-form-ready')==='true')initialized.current=true;for(const run of [...waiters.current])run();};
  useLayoutEffect(wake);
  useLayoutEffect(()=>{mounted.current=true;return()=>{mounted.current=false;wake();};},[]);
@@ -22,7 +23,8 @@ function SubmitBoundary({children,disabled,failureMessage,action}:{action:string
   const timer=setTimeout(()=>finish(new CanvasFlushError('not_ready')),5000);waiters.current.add(check);check();
  }),[]);
  const pipeline=useRef<ReturnType<typeof createCanvasSubmitPipeline>|null>(null);
- if(!pipeline.current)pipeline.current=createCanvasSubmitPipeline({form:()=>current.current.formRef.current,ready,submit:options=>{const endpoint=options.action??defaultAction.current;if(typeof endpoint!=='string'||new URL(endpoint,window.location.origin).origin!==window.location.origin||Boolean(new URL(endpoint,window.location.origin).username||new URL(endpoint,window.location.origin).password))throw new CanvasFlushError('not_ready');return current.current.submit({...options,action:endpoint});},onStart:()=>setError(''),onError:()=>setError(failure.current),onUnconfirmed:()=>current.current.setModified(true)});
+ if(!pipeline.current)pipeline.current=createCanvasSubmitPipeline({form:()=>current.current.formRef.current,ready,submit:async options=>{const endpoint=options.action??defaultAction.current;if(typeof endpoint!=='string'||new URL(endpoint,window.location.origin).origin!==window.location.origin||Boolean(new URL(endpoint,window.location.origin).username||new URL(endpoint,window.location.origin).password))throw new CanvasFlushError('not_ready');// Commit Payload's acknowledged fields before another queued submit snapshots them.
+ const result=await current.current.submit({...options,action:endpoint});flushSync(()=>acknowledgeCommit(value=>value+1));return result;},onStart:()=>setError(''),onError:()=>setError(failure.current),onUnconfirmed:()=>current.current.setModified(true)});
  const submit=pipeline.current;
  // The native SDK context is never patched. Every supplied controller explicitly uses this one submit port.
  const value={...native,submit};

@@ -15,19 +15,19 @@
   },
   "readmeCover": {
     "file": "media/demo-cover.png",
-    "sha256": "39e769d9028869668a3a6298c4ef960c992f6d8968276aacd5cf6f11e6615767",
-    "source": "Decoded frame950 from the accepted73-second Add CMS UI-animation demo,1920x1080; synthetic content, genuine editor state.",
+    "sha256": "5a75d4bedcd69742490188fc6769b9f9f874ff36d163db227b6b01d264f468d6",
+    "source": "Four-theme montage from the accepted 89-second Add CMS UI-animation film, 1920x1080; synthetic content and genuine editor states.",
     "scope": "Product still from the separately produced demo; production tools are not bundled."
   },
   "readmeDemo": {
     "file": "media/add-cms-demo.mp4",
-    "sha256": "decef2e093ddcd8721a1b7283685fe99bd00bf71c62955cc2f9878c63292a891",
-    "bytes": 14745294,
-    "durationSeconds": 73,
+    "sha256": "4892d3146d948c53cb87378258e8861d34f5be27b6f46131dafaa7c3da9062a3",
+    "bytes": 13778386,
+    "durationSeconds": 89,
     "width": 1920,
     "height": 1080,
     "fps": 30,
-    "kind": "Layered UI animation using genuine editor states and verified synthetic demo content, with synthetic login typing; not continuous recording.",
+    "kind": "Layered UI animation using genuine editor states and verified synthetic demo content, including four functional admin appearances and publication in the fourth appearance; synthetic login typing, not continuous recording.",
     "soundtrack": {
       "title": "2:23 AM",
       "artist": "しゃろう",
@@ -41,7 +41,7 @@
       "bytes": 9098443,
       "durationSeconds": 73.045333,
       "sha256": "2bb4a8c2fd88310c82a13a19e19f3ee922d4274cb205e5b9d9e3d1a8a40bf411",
-      "content": "Same accepted demonstration, delivery-compressed; authenticated native GitHub player metadata verified and anonymous access confirmed by the owner."
+      "content": "Previous accepted 73-second demonstration, delivery-compressed; retained by the current README until a native GitHub attachment for the 89-second film is available. Anonymous access confirmed by the owner."
     }
   }
 }

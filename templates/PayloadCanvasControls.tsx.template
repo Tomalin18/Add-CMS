@@ -24,6 +24,7 @@ export function PayloadCanvasPublish({label}:{label:string}){
 export function PayloadCanvasAutosave({interval=1500,copy}:{interval?:number;copy:{saving:string;failed:string}}){
  const form=useCanvasForm(),info=useDocumentInfo(),{config}=useConfig(),{code}=useLocale(),[fields]=useAllFormFields(),modified=useFormModified(),initializing=useFormInitializing();
  const debounced=useDebounce(fields,Math.max(80,interval));const [status,setStatus]=useState('');
+ useEffect(()=>{if(!modified)setStatus('');},[modified]);
  useEffect(()=>{
   if(!modified||initializing||!info.hasSavePermission||!info.collectionSlug||!info.id||info.uploadStatus==='uploading')return;
   let active=true;setStatus(copy.saving);
